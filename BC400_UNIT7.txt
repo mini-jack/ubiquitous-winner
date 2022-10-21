@@ -1,0 +1,102 @@
+*&---------------------------------------------------------------------*
+*& Report ZDEV_BC400_U7
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zdev_bc400_u7.
+
+TYPES: gty_result      TYPE p LENGTH 16 DECIMALS 2,
+       gty_result_char LIKE spell.
+
+PARAMETERS:
+  pa_int1 TYPE i,
+  pa_int2 TYPE i,
+  pa_oper TYPE c LENGTH 1.
+
+DATA:
+  gv_result      TYPE gty_result,
+  gv_result_char TYPE gty_result_char.
+
+IF ( pa_oper = '+' OR
+  pa_oper = '-' OR
+  pa_oper = '*' OR
+  pa_oper = '/' AND pa_oper <> 0 OR
+  pa_oper = '%' OR
+  pa_oper = 'S').
+
+  CASE pa_oper.
+    WHEN '+'.
+      gv_result = pa_int1 + pa_int2.
+    WHEN '-'.
+      gv_result = pa_int1 - pa_int2.
+    WHEN '*'.
+      gv_result = pa_int1 * pa_int2.
+    WHEN '/'.
+      gv_result = pa_int1 / pa_int2.
+    WHEN '%'.
+      PERFORM calc_percentage
+      USING
+            pa_int1
+            pa_int2
+      CHANGING
+            gv_result.
+    WHEN 'S'.
+      CALL FUNCTION 'SPELL_AMOUNT'
+        EXPORTING
+          amount    = pa_int1
+*         CURRENCY  = ' '
+*         FILLER    = ' '
+          language  = sy-langu
+        IMPORTING
+          in_words  = gv_result_char
+        EXCEPTIONS
+          not_found = 1
+          too_large = 2
+          OTHERS    = 3.
+      IF sy-subrc <> 0.
+        CASE sy-subrc.
+          WHEN 1.
+            WRITE: 'The number is not found'.
+          WHEN 2.
+            WRITE: 'The number is too large'.
+          WHEN 3.
+            WRITE: 'Something went wrong'.
+        ENDCASE.
+
+      ENDIF.
+  ENDCASE.
+  IF pa_oper = 'S'.
+    WRITE: 'First parametr spells '(fps), gv_result_char-word.
+  ELSE.
+    WRITE: 'Parametrs ', pa_int1 ,pa_oper, pa_int2,  'Result is'(res), gv_result.
+  ENDIF.
+ELSEIF ( pa_oper = '/' AND pa_oper = 0 ).
+  WRITE 'No division by zero'(dbz).
+ELSE.
+  WRITE 'invalid operator'(iop).
+ENDIF.
+*&---------------------------------------------------------------------*
+*& Form culc_percentage
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM calc_percentage
+  USING
+      pv_act TYPE i
+      pv_max TYPE i
+  CHANGING
+      cv_result TYPE gty_result.
+
+*simple error handling
+  IF ( pv_max = 0 ).
+    cv_result = 0.
+    WRITE 'error in percentage calculation'(epc).
+  ELSE.
+* calculate resultat
+    cv_result = pv_act / pv_max * 100.
+  ENDIF.
+
+ENDFORM.
