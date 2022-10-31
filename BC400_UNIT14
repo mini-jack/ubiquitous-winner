@@ -1,0 +1,52 @@
+*&---------------------------------------------------------------------*
+*& Report ZDEV_BC400_U14
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zdev_bc400_u14.
+
+PARAMETERS:
+  pa_carid TYPE sflight-carrid,
+  pa_conid TYPE sflight-connid.
+
+*DATA:
+*  gt_itab  TYPE STANDARD TABLE OF gty_s_carrierflight WITH KEY carrid, customid.
+
+DATA:
+  gt_flights TYPE wd_sflight_tab,
+  gs_flight  TYPE sflight,
+
+  obj type ref to CL_CHIP_WD_TEST_SFLIGHT.
+
+
+TRY.
+
+  create OBJECT obj.
+    CALL METHOD obj->get_flights
+      EXPORTING
+        carrid   = pa_carid
+        connid   = pa_conid
+      RECEIVING
+        sflights = gt_flights.
+
+
+
+ENDTRY.
+
+
+LOOP AT gt_flights into gs_flight.
+  write: / gs_flight-CARRID,
+ gs_flight-CONNID,
+ gs_flight-FLDATE,
+ gs_flight-PRICE,
+ gs_flight-CURRENCY,
+ gs_flight-PLANETYPE,
+ gs_flight-SEATSMAX,
+ gs_flight-SEATSOCC,
+ gs_flight-PAYMENTSUM,
+ gs_flight-SEATSMAX_B,
+ gs_flight-SEATSOCC_B,
+ gs_flight-SEATSMAX_F,
+ gs_flight-SEATSOCC_F.
+
+ENDLOOP.
