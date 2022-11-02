@@ -1,0 +1,32 @@
+FUNCTION zdev_bc400_fm_auth_check.
+*"----------------------------------------------------------------------
+*"*"Local Interface:
+*"  IMPORTING
+*"     REFERENCE(IV_CARRID) TYPE  S_CARRID
+*"     REFERENCE(IV_ACTIVITY) TYPE  ACTIV_AUTH
+*"  EXCEPTIONS
+*"      NO_ACCESS
+*"      WRONG_ACTIVITY
+*"----------------------------------------------------------------------
+
+  CASE iv_activity.
+    WHEN '01' OR '02' OR '03'.
+      AUTHORITY-CHECK OBJECT 'S_CARRID'
+       ID 'CARRID' FIELD iv_carrid
+       ID 'ACTVT' FIELD iv_activity.
+      IF sy-subrc = 0.
+* Implement a suitable exception handling here
+        write 'here you are'.
+        else.
+          RAISE NO_access.
+      ENDIF.
+
+    WHEN OTHERS.
+      RAISE wrong_activity.
+  ENDCASE.
+
+
+
+
+
+ENDFUNCTION.
