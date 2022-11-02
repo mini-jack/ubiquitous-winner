@@ -1,0 +1,23 @@
+FUNCTION zdev_bc400_fm_connection_get.
+*"----------------------------------------------------------------------
+*"*"Local Interface:
+*"  IMPORTING
+*"     REFERENCE(IV_CARRID) TYPE  S_CARR_ID
+*"     REFERENCE(IV_CONNID) TYPE  S_CONN_ID
+*"  EXPORTING
+*"     REFERENCE(ES_CONNECTION) TYPE  SDSH_S_CONNECTIONS
+*"  EXCEPTIONS
+*"      NO_DATA
+*"----------------------------------------------------------------------
+  SELECT SINGLE mandt carrid connid cityfrom airpfrom cityto airpto deptime arrtime fltime
+    FROM spfli
+   INTO es_connection
+    WHERE carrid = iv_carrid AND connid = iv_connid.
+  IF sy-subrc <> 0.
+    RAISE no_data.
+  ENDIF.
+
+
+
+
+ENDFUNCTION.
