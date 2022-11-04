@@ -1,0 +1,8 @@
+method ONACTIONGO .
+DATA lo_COMPONENTCONTROLLER TYPE REF TO ig_componentcontroller .
+lo_COMPONENTCONTROLLER =   wd_this->get_componentcontroller_ctr( ).
+
+  lo_componentcontroller->execute_zdev_bc400_fm_connecti(
+  ).
+
+endmethod.
