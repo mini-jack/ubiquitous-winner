@@ -1,0 +1,115 @@
+*&---------------------------------------------------------------------*
+*& Report ZDEV_BC400_U25
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zdev_bc400_u25.
+
+TYPE-POOLS:
+icon,
+col.
+
+TYPES:
+  BEGIN OF gty_s_carrierflight,
+
+    carrid      TYPE scarr-carrid,
+    connid      TYPE s_carr_id,
+    fldate      TYPE s_date,
+    price       TYPE s_price,
+    currency    TYPE s_currcode,
+    planetype   TYPE s_planetye,
+    seatsmax    TYPE s_seatsmax,
+    seatsocc    TYPE s_seatsocc,
+    paymentsum  TYPE s_sum,
+    seatsmax_b  TYPE s_smax_b,
+    seatsocc_b  TYPE s_socc_b,
+    seatsmax_f  TYPE s_smax_f,
+    seatsocc_f  TYPE s_socc_f,
+    percent_occ TYPE percent,
+
+  END OF gty_s_carrierflight.
+
+TYPES it_flights TYPE TABLE OF gty_s_carrierflight.
+
+CONSTANTS:
+  gc_limit_red    TYPE s_seatsocc VALUE 98,
+  gc_limit_yellow TYPE s_seatsocc VALUE 75.
+
+DATA:
+  gt_flights    TYPE chip_sflight_tab,
+  gs_flight     TYPE zsSFLIGHT,
+  gt_flight_per TYPE it_flights,
+  gs_flight_per TYPE gty_s_carrierflight.
+
+PARAMETERS:
+pa_car TYPE s_carr_id.
+
+SELECT-OPTIONS:
+so_con FOR gs_flight-connid.
+
+TRY.
+
+    CALL METHOD zcl_bc400_flightmodel=>get_flights_range
+      EXPORTING
+        iv_carrid  = pa_car
+        it_connid  = so_con[]
+      IMPORTING
+        et_flights = gt_flights
+      EXCEPTIONS
+        no_data    = 1
+        OTHERS     = 2.
+
+    IF sy-subrc <> 0.
+*   Implement suitable error handling here
+      WRITE: 'No data was found'(001).
+    ENDIF.
+
+ENDTRY.
+
+LOOP AT gt_flights INTO gs_flight.
+
+  PERFORM calc_percentage(zdev_bc400_u25)
+    USING gs_flight-seatsocc
+          gs_flight-seatsmax
+    CHANGING gs_flight-percent_occ.
+
+  MODIFY gt_flights FROM gs_flight.
+
+  NEW-LINE.
+
+  IF gs_flight-percent_occ >= gc_limit_red.
+    WRITE icon_red_light AS ICON.
+
+  ELSEIF gs_flight-percent_occ >= gc_limit_yellow.
+    WRITE icon_yellow_light AS ICON.
+
+  ELSE.
+    WRITE icon_green_light AS ICON.
+  ENDIF.
+  WRITE: gs_flight-carrid COLOR COL_KEY,
+  gs_flight-connid COLOR COL_KEY,
+  gs_flight-fldate COLOR COL_KEY,
+   gs_flight-seatsmax color 1 INTENSIFIED off,
+   gs_flight-seatsocc color 2,
+   gs_flight-percent_occ color 3.
+
+ENDLOOP.
+
+
+FORM calc_percentage
+  USING
+      pv_act TYPE i
+      pv_max TYPE i
+  CHANGING
+      pv_result TYPE percent.
+
+*simple error handling
+  IF ( pv_max = 0 ).
+    pv_result = 0.
+    WRITE 'error in percentage calculation'(epc).
+  ELSE.
+* calculate resultat
+    pv_result = pv_act / pv_max * 100.
+  ENDIF.
+
+ENDFORM.
