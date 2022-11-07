@@ -1,0 +1,126 @@
+*&---------------------------------------------------------------------*
+*& Module Pool      ZDEV_BC400_U27
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+
+INCLUDE ZDEV_BC400_TOP                          .    " Global Data
+
+INCLUDE ZDEV_BC400_O01                          .  " PBO-Modules
+INCLUDE ZDEV_BC400_I01                          .  " PAI-Modules
+INCLUDE ZDEV_BC400_F01                          .  " FORM-Routines
+
+INCLUDE zdev_bc400_u27_status_0200o01.
+
+
+*&---------------------------------------------------------------------*
+*& Include ZDEV_BC400_TOP                           - Module Pool      ZDEV_BC400_U27
+*&---------------------------------------------------------------------*
+PROGRAM zdev_bc400_u27.
+
+DATA: ok_code TYPE sy-ucomm.
+TABLES sdsh_s_connections.
+DATA: gs_connections TYPE sdsh_s_connections,
+      gt_flights type FPM_T_FLIGHTS,
+      go_container type REF TO CL_GUI_CUSTOM_CONTAINER,
+      go_alv_grid type REF TO CL_GUI_ALV_GRID.
+
+*&---------------------------------------------------------------------*
+*& Include          ZDEV_BC400_I01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE sy-ucomm.
+    WHEN 'GO'.
+      MOVE-CORRESPONDING sdsh_s_connections TO gs_connections.
+
+      CALL FUNCTION 'ZDEV_BC400_FM_CONNECTION_GET'
+        EXPORTING
+          iv_carrid     = gs_connections-carrid
+          iv_connid     = gs_connections-connid
+        IMPORTING
+          es_connection = gs_connections
+        EXCEPTIONS
+          no_data       = 1
+          OTHERS        = 2.
+      IF sy-subrc <> 0.
+* Implement suitable error handling here
+        MESSAGE i042(zbc400) WITH gs_connections-carrid
+gs_connections-connid. "flight not found
+      ENDIF.
+      MOVE-CORRESPONDING gs_connections TO sdsh_s_connections.
+
+      CALL FUNCTION 'ZDEV_FM_FLIGHTLIST_GET_EXT'
+        EXPORTING
+          iv_carrid  = gs_connections-carrid
+          iv_connid  = gs_connections-connid
+        IMPORTING
+          et_flights = gt_flights
+        EXCEPTIONS
+          no_data    = 1
+          OTHERS     = 2.
+      IF sy-subrc <> 0.
+* Implement suitable error handling here
+        WRITE: 'something went wrong'(sww).
+        clear gt_flights.
+      ENDIF.
+
+
+      SET SCREEN 0200.
+    WHEN OTHERS.
+  ENDCASE.
+
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0200  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0200 INPUT.
+
+  CASE sy-ucomm.
+    WHEN 'BACK'.
+      SET SCREEN 0100.
+    WHEN 'EXIT'.
+      SET SCREEN 0.
+    WHEN OTHERS.
+  ENDCASE.
+ENDMODULE.
+
+*----------------------------------------------------------------------*
+***INCLUDE ZDEV_BC400_U27_STATUS_0200O01.
+*----------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_0200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0200 OUTPUT.
+* SET PF-STATUS 'xxxxxxxx'.
+* SET TITLEBAR 'xxx'.
+
+  IF go_container IS INITIAL.
+    CREATE OBJECT go_container
+      EXPORTING
+        container_name = 'CONTROL_AREA_FLIGHTS'.
+
+    CREATE OBJECT go_alv_grid
+      EXPORTING
+        i_parent = go_container.
+
+    CALL METHOD go_alv_grid->set_table_for_first_display
+      EXPORTING
+        i_structure_name = 'FPM_S_FLIGHT'
+
+      CHANGING
+        it_outtab        = gt_flights.
+  ELSE.
+    CALL METHOD go_alv_grid->refresh_table_display.
+
+  ENDIF.
+ENDMODULE.
