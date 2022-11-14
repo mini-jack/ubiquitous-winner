@@ -1,0 +1,106 @@
+*&---------------------------------------------------------------------*
+*& Report ZBC401_U03
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zbc401_u04.
+TYPE-POOLS icon.
+
+INCLUDE zbc401_u04_eq.
+
+
+DATA:r_equi    TYPE REF TO lcl_equipment,
+     equi_list TYPE TABLE OF REF TO lcl_equipment,
+     count type i.
+
+START-OF-SELECTION.
+
+*  lcl_equipment->display_n_o_eqtyp( ).
+
+  CREATE OBJECT r_equi.
+  APPEND r_equi TO equi_list.
+  r_equi->set_atributes(
+  im_name = 'LH'
+  im_eqtype = '1'
+  ).
+
+  CREATE OBJECT r_equi.
+  APPEND r_equi TO equi_list.
+  r_equi->set_atributes(
+   im_name = 'BN'
+   im_eqtype = '4'
+   ).
+
+  CREATE OBJECT r_equi.
+  APPEND r_equi TO equi_list.
+  r_equi->set_atributes(
+   im_name = 'JD'
+   im_eqtype = '3'
+   ).
+
+  CREATE OBJECT r_equi.
+  APPEND r_equi TO equi_list.
+  r_equi->set_atributes(
+  im_name = 'PL'
+  im_eqtype = '2'
+  ).
+
+  LOOP AT equi_list into r_equi.
+r_equi->display_attributes( ).
+  ENDLOOP.
+
+  count = r_equi->get_n_o_equipments( ).
+
+  SKIP 2.
+WRITE: / 'Num of equi'(ca1), count.
+
+*&---------------------------------------------------------------------*
+*& Include          ZBC401_U03_EQ
+*&---------------------------------------------------------------------*
+
+TYPE-POOLS icon.
+
+
+CLASS lcl_equipment DEFINITION.
+  PUBLIC SECTION.
+    CONSTANTS: pos_1 TYPE i VALUE 40.
+    METHODS: set_atributes
+      IMPORTING im_name   TYPE string
+                im_eqtype TYPE eqtyp,
+      display_attributes.
+    CLASS-METHODS:
+      display_n_o_eqtyp,
+      GET_N_O_equipments RETURNING VALUE(re_count) type i.
+
+
+  PRIVATE SECTION.
+    DATA: name   TYPE string,
+          eqtype TYPE eqtyp.
+    CLASS-DATA n_o_equipments TYPE i.
+
+ENDCLASS.
+
+CLASS lcl_equipment IMPLEMENTATION.
+  METHOD set_atributes.
+    name = im_name.
+    eqtype = im_eqtype.
+    n_o_equipments = n_o_equipments + 1.
+  ENDMETHOD.
+
+  METHOD display_attributes.
+    WRITE: / icon_equipment AS ICON,
+    / 'name of equipment'(001), AT pos_1 name,
+    / 'equipmnet type'(002), AT pos_1 eqtype.
+  ENDMETHOD.
+  METHOD display_n_o_eqtyp.
+    WRITE:  /, / 'Total number of planes'(ca1),
+AT pos_1 n_o_equipments LEFT-JUSTIFIED, /.
+
+  ENDMETHOD.
+
+  METHOD get_n_o_equipments.
+    re_count = n_o_equipments.
+
+  ENDMETHOD.
+
+ENDCLASS.
