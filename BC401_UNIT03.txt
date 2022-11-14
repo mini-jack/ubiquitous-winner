@@ -1,0 +1,70 @@
+*&---------------------------------------------------------------------*
+*& Report ZBC401_U03
+*&---------------------------------------------------------------------
+*&---------------------------------------------------------------------*
+REPORT ZBC401_U03.
+type-POOLS icon.
+
+INCLUDE ZBC401_U03_EQ.
+
+data:r_equi type REF TO lcl_equipment,
+      equi_list type TABLE of REF TO lcl_equipment.
+
+START-OF-SELECTION.
+
+CREATE OBJECT r_equi.
+APPEND r_equi TO equi_list.
+
+CREATE OBJECT r_equi.
+APPEND r_equi TO equi_list.
+
+CREATE OBJECT r_equi.
+APPEND r_equi TO equi_list.
+
+create object r_equi.
+append r_equi to equi_list.
+*&---------------------------------------------------------------------*
+*& Include          ZBC401_U03_EQ
+*&---------------------------------------------------------------------*
+
+
+TYPE-POOLS icon.
+
+
+CLASS clc_equipment DEFINITION.
+  PUBLIC SECTION.
+  CONSTANTS: pos_1 type i VALUE 10.
+    METHODS: set_atributes
+      IMPORTING im_name   TYPE string
+                im_eqtype TYPE eqtyp,
+      display_attributes.
+    CLASS-METHODS:
+    display_n_o_eqtyp.
+
+
+  PRIVATE SECTION.
+    DATA: name   TYPE string,
+          eqtype TYPE eqtyp.
+    CLASS-DATA n_o_equipments TYPE i.
+
+ENDCLASS.
+
+CLASS clc_equipment IMPLEMENTATION.
+  METHOD set_atributes.
+    name = im_name.
+    eqtype = im_eqtype.
+    n_o_equipments = n_o_equipments + 1.
+  ENDMETHOD.
+
+  METHOD display_attributes.
+    WRITE: / icon_equipment AS ICON,
+    / 'name of equipment'(001), AT pos_1 name,
+    / 'equipmnet type'(002), AT pos_1 eqtype.
+  ENDMETHOD.
+  METHOD display_n_o_eqtyp.
+    write:  /, / 'Total number of planes'(ca1),
+AT pos_1 n_o_equipments LEFT-JUSTIFIED, /.
+
+    ENDMETHOD.
+
+ENDCLASS.
