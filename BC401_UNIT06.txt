@@ -1,0 +1,171 @@
+*&---------------------------------------------------------------------*
+*& Report ZBC401_U03
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zbc401_u06.
+TYPE-POOLS icon.
+
+INCLUDE ZBC401_U06_EQ.
+*INCLUDE ZBC401_U05_EQ.
+
+
+
+DATA:r_plane    TYPE REF TO lcl_planes,
+     plane_list TYPE TABLE OF REF TO lcl_planes,
+     count type i.
+
+START-OF-SELECTION.
+
+  lcl_planes=>display_n_o_planetype( ).
+
+  CREATE OBJECT r_plane.
+  APPEND r_plane TO plane_list.
+  r_plane->set_atributes(
+  im_name = 'LH'
+  im_planetype = '146-200'
+  ).
+
+  CREATE OBJECT r_plane.
+  APPEND r_plane TO plane_list.
+  r_plane->set_atributes(
+   im_name = 'BN'
+   im_planetype = '146-300'
+   ).
+
+  CREATE OBJECT r_plane.
+  APPEND r_plane TO plane_list.
+  r_plane->set_atributes(
+   im_name = 'JD'
+   im_planetype = '3'
+   ).
+
+  CREATE OBJECT r_plane.
+  APPEND r_plane TO plane_list.
+  r_plane->set_atributes(
+  im_name = 'PL'
+  im_planetype = '2'
+  ).
+
+  LOOP AT plane_list into r_plane.
+r_plane->display_attributes( ).
+  ENDLOOP.
+
+  count = r_plane->get_n_o_planes( ).
+
+  SKIP 2.
+WRITE: / 'Num of equi'(ca1), count.
+
+*&---------------------------------------------------------------------*
+*& Include          ZBC401_U03_EQ
+*&---------------------------------------------------------------------*
+
+TYPE-POOLS icon.
+
+
+CLASS lcl_planes DEFINITION.
+  PUBLIC SECTION.
+    CONSTANTS: pos_1 TYPE i VALUE 40.
+    METHODS: set_atributes
+      IMPORTING im_name      TYPE string
+                im_planetype TYPE saplane-planetype,
+      display_attributes.
+    CLASS-METHODS:
+    class_constructor,
+      display_n_o_planetype,
+      get_n_o_planes RETURNING VALUE(re_count) TYPE i.
+
+
+  PRIVATE SECTION.
+    DATA: name      TYPE string,
+          planetype TYPE saplane-planetype.
+    CLASS-DATA n_o_planes TYPE i.
+    CLASS-DATA list_of_planetypes type TABLE OF saplane.
+    CLASS-METHODS:
+      get_technical_atributes
+        IMPORTING
+          im_type    TYPE saplane-planetype
+        EXPORTING
+          ex_weight  TYPE s_plan_wei
+          ex_tankcap TYPE s_capacity
+        EXCEPTIONS
+          wrong_planetype.
+
+ENDCLASS.
+
+CLASS lcl_planes IMPLEMENTATION.
+
+  METHOD class_constructor.
+SELECT * FROM saplane INTO TABLE list_of_planetypes.
+ENDMETHOD.
+
+  METHOD set_atributes.
+    name = im_name.
+    planetype = im_planetype.
+    n_o_planes = n_o_planes + 1.
+  ENDMETHOD.
+
+  METHOD display_attributes.
+
+    DATA: weight TYPE saplane-weight,
+          cap    TYPE saplane-tankcap.
+
+    get_technical_atributes(
+    EXPORTING
+      im_type = planetype
+      IMPORTING
+        ex_weight = weight
+        ex_tankcap = cap
+        EXCEPTIONS
+          wrong_planetype = 4 ).
+
+    WRITE: / icon_equipment AS ICON,
+    / 'name of plane'(001), AT pos_1 name,
+    / 'plane type'(002), AT pos_1 planetype.
+
+    IF sy-subrc <> 0.
+      WRITE: / icon_failure AS ICON, 'WRONG_PLANETYPE'.
+
+    ELSE.
+      WRITE: / 'weight of airplane'(003),
+      AT pos_1 weight LEFT-JUSTIFIED,
+      / 'tank capacity of airplane '(004),
+      AT pos_1 cap LEFT-JUSTIFIED.
+
+
+    ENDIF.
+
+
+
+  ENDMETHOD.
+  METHOD display_n_o_planetype.
+    WRITE:  /, / 'Total number of planes'(ca1),
+AT pos_1 n_o_planes LEFT-JUSTIFIED, /.
+
+  ENDMETHOD.
+
+  METHOD get_n_o_planes.
+    re_count = n_o_planes.
+
+  ENDMETHOD.
+
+
+  METHOD get_technical_atributes.
+    DATA: wa TYPE saplane.
+READ TABLE list_of_planetypes INTO wa
+WITH KEY planetype = im_type mandt = 100
+TRANSPORTING weight tankcap.
+
+IF sy-subrc = 0.
+ex_weight = wa-weight.
+ex_tankcap = wa-tankcap.
+ELSE.
+RAISE wrong_planetype.
+ENDIF.
+
+
+
+  ENDMETHOD.
+
+
+ENDCLASS.
