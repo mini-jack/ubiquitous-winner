@@ -1,0 +1,15 @@
+*&---------------------------------------------------------------------*
+*& Report ZBC401_U19
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZBC401_U19.
+DATA: r_agency TYPE REF TO zcl_bc401_agency.
+DATA: wa TYPE spfli.
+START-OF-SELECTION.
+CREATE OBJECT r_agency
+EXPORTING im_name = 'I will access the private components of the singletone'.
+r_agency->get_connection(
+EXPORTING im_carrid = 'LH' im_connid = '0400'
+IMPORTING ex_connection = wa ).
+WRITE: / wa-carrid, wa-connid, wa-cityfrom, wa-cityto.
