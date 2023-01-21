@@ -1,0 +1,67 @@
+FUNCTION zbc402_fmdd_connection_list.
+*"----------------------------------------------------------------------
+*"*"Local Interface:
+*"  IMPORTING
+*"     REFERENCE(IP_START) TYPE  S_FROM_CIT
+*"     REFERENCE(IP_DEST) TYPE  S_TO_CITY
+*"  EXPORTING
+*"     REFERENCE(ET_TRAVEL_LIST) TYPE  ZTYCONN_LIST
+*"  RAISING
+*"      ZCX_BC402_NO_CONNECTIONS
+*"----------------------------------------------------------------------
+
+
+  DATA: conn_list LIKE STANDARD TABLE OF zsconn_list.
+  DATA:      startline LIKE sy-tabix.
+
+*  TYPES: BEGIN OF wa_travel,
+*           dest      TYPE spfli-cityto,
+*           cofl_list LIKE conn_list,
+*         END OF wa_travel.
+*  DATA:   travel_list LIKE SORTED TABLE OF wa_travel WITH UNIQUE KEY dest.
+
+  FIELD-SYMBOLS:
+    <fs_conn>     TYPE zsconn_list,
+    <fs_conn_int> TYPE zsconn_list.
+  "    <fs_travel>   LIKE wa_travel.
+
+  ""data exceptions
+  DATA: iv_exception TYPE REF TO zcx_bc402_no_connections,
+        iv_message   TYPE string.
+  "data FM
+  DATA: it_conn_list TYPE ztyconn_list.
+
+
+  SELECT a~carrid, a~connid, a~cityfrom, a~cityto FROM spfli AS a WHERE a~cityto = @ip_dest AND a~cityfrom = @ip_start
+    INTO CORRESPONDING FIELDS OF TABLE @et_travel_list.
+  SORT et_travel_list BY cityfrom cityto ASCENDING AS TEXT.
+
+*  LOOP AT it_conn_list ASSIGNING <fs_conn> WHERE cityfrom = ip_start.
+*    READ TABLE it_conn_list
+*    WITH KEY cityto = ip_dest
+*    TRANSPORTING NO FIELDS
+*    BINARY SEARCH.
+*    startline = sy-tabix.
+*    LOOP AT it_conn_list ASSIGNING <fs_conn_int>
+*      FROM startline.
+*      IF <fs_conn_int>-cityto <> <fs_conn>-cityto.
+*        EXIT.
+*      ENDIF.
+*      APPEND <fs_conn_int> TO et_travel_list.
+*    ENDLOOP.
+*    IF et_travel_list IS NOT INITIAL.
+*      EXIT.
+*    ENDIF.
+*  ENDLOOP.
+  TRY.
+      IF  et_travel_list IS INITIAL.
+        RAISE EXCEPTION TYPE zcx_bc402_no_connections
+          EXPORTING
+            textid =
+                     zcx_bc402_no_connections=>no_connections_found.
+      ENDIF.
+    CATCH zcx_bc402_no_connections INTO iv_exception.
+      iv_message = iv_exception->get_text( ).
+      MESSAGE iv_message TYPE 'I'.
+  ENDTRY.
+ENDFUNCTION.
