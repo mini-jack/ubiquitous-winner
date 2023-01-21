@@ -1,0 +1,28 @@
+FUNCTION zbc402_get_conn_list.
+*"----------------------------------------------------------------------
+*"*"Local Interface:
+*"  IMPORTING
+*"     REFERENCE(IP_START) TYPE  S_FROM_CIT
+*"     REFERENCE(IP_DEST) TYPE  S_TO_CITY
+*"  EXPORTING
+*"     REFERENCE(EP_CONNECTION_LIST) TYPE  ZTYCONN_LIST
+*"  EXCEPTIONS
+*"      NOT_FOUND
+*"----------------------------------------------------------------------
+
+  DATA wa_conn LIKE LINE OF ep_connection_list.
+  DATA it_connection_list TYPE ZTYCONN_LIST.
+  FIELD-SYMBOLS <fs_connections> TYPE ZTYCONN_LIST.
+
+      TRY.
+          CALL FUNCTION 'ZBC402_FMDD_CONNECTION_LIST'
+            EXPORTING
+              ip_start       = ip_start
+              ip_dest        = ip_dest
+            IMPORTING
+              et_travel_list = ep_connection_list.
+        CATCH zcx_bc402_no_connections.
+          MESSAGE e001(zbc402) RAISING not_found.
+      ENDTRY.
+
+    ENDFUNCTION.
