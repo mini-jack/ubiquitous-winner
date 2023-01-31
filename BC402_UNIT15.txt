@@ -1,0 +1,30 @@
+FUNCTION zbc402_get_step_list.
+*"----------------------------------------------------------------------
+*"*"Local Interface:
+*"  IMPORTING
+*"     REFERENCE(I_NUMBER) TYPE  INT4
+*"  EXPORTING
+*"     REFERENCE(E_STEPLISTT) TYPE  ZTYCONN_LIST
+*"  EXCEPTIONS
+*"      NOT_FOUND
+*"      NO_DATA
+*"----------------------------------------------------------------------
+
+  FIELD-SYMBOLS <fs_connection> LIKE LINE OF gt_connections.
+
+  IF lines( gt_connections ) = 0.
+    MESSAGE e173(zbc402) RAISING no_data.
+  ENDIF.
+  READ TABLE gt_connections ASSIGNING <fs_connection> INDEX i_Number.
+
+  IF sy-subrc <> 0.
+    MESSAGE e174(zbc402) RAISING not_found.
+  ELSE.
+    APPEND <fs_connection> TO e_steplistt.
+  ENDIF.
+
+
+
+
+
+ENDFUNCTION.
