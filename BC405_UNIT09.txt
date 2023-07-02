@@ -1,0 +1,162 @@
+*&---------------------------------------------------------------------*
+*& Report zp_bc405_u09
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zp_bc405_u09.
+
+INCLUDE zpi_bc405_u09_top.
+INCLUDE zpi_BC405_u09_1e01.
+INCLUDE zpi_BC405_u09_1O01.
+INCLUDE zpi_bc405_u09_1t01.
+INCLUDE zpi_BC405_u09_1F01.
+
+*&---------------------------------------------------------------------*
+*& Include zpi_bc405_u09_top
+*&---------------------------------------------------------------------*
+
+DATA: it_sflight TYPE TABLE OF sflight.
+DATA: wa_sflight LIKE LINE OF it_sflight.
+DATA: list_display TYPE sap_bool.
+DATA: gr_count TYPE REF TO cl_gui_custom_container.
+DATA:gr_alv TYPE REF TO cl_salv_table.
+DATA:gr_error TYPE REF TO cx_salv_error.
+DATA:ok_code LIKE sy-ucomm.
+
+SELECT-OPTIONS:
+so_car FOR wa_sflight-carrid MEMORY ID car,
+so_con FOR wa_sflight-connid.
+
+SELECTION-SCREEN SKIP 1.
+SELECTION-SCREEN BEGIN OF BLOCK alv WITH FRAME TITLE TEXT-alv.
+  PARAMETERS: pa_full RADIOBUTTON GROUP alvd,
+              pa_cont RADIOBUTTON GROUP alvd DEFAULT 'X',
+              pa_list RADIOBUTTON GROUP alvd.
+SELECTION-SCREEN END OF BLOCK alv.
+
+*&---------------------------------------------------------------------*
+*& Include zpi_bc405_u09_1e01
+*&---------------------------------------------------------------------*
+
+START-OF-SELECTION.
+
+  SELECT * FROM sflight
+  INTO TABLE it_sflight
+  WHERE carrid IN so_car AND
+        connid IN so_con.
+
+  CASE 'X'.
+    WHEN pa_full OR pa_list.
+
+      IF pa_list IS NOT INITIAL.
+        list_display = if_salv_c_bool_sap=>true.
+      ELSE.
+        list_display = if_salv_c_bool_sap=>false.
+      ENDIF.
+
+      TRY.
+          cl_salv_table=>factory(
+          EXPORTING
+          list_display = list_display
+          IMPORTING
+          r_salv_table = gr_alv
+          CHANGING
+          t_table = it_sflight
+          ).
+        CATCH cx_salv_msg INTO gr_error.
+          zcx_sapbc405_error_handler1=>process_alv_error_msg(
+                        r_error = gr_error
+                        ).
+      ENDTRY.
+
+      PERFORM define_settings USING gr_alv.
+      gr_alv->display(  ).
+    WHEN pa_cont.
+      CALL SCREEN 100.
+  ENDCASE.
+
+*&---------------------------------------------------------------------*
+*& Include zpi_bc405_u09_1o01
+*&---------------------------------------------------------------------*
+MODULE status_100 OUTPUT.
+  SET PF-STATUS 'S100'.
+  SET TITLEBAR 'T100'.
+ENDMODULE.
+
+MODULE create_controle OUTPUT.
+  IF gr_count IS NOT BOUND.
+    CREATE OBJECT gr_count
+      EXPORTING
+        container_name = 'MY_CONTAINER'
+      EXCEPTIONS
+        OTHERS         = 1.
+    IF sy-subrc <> 0.
+      MESSAGE a015(zbc405).
+    ENDIF.
+
+    TRY.
+        cl_salv_table=>factory(
+        EXPORTING
+        r_container = gr_count
+        IMPORTING
+        r_salv_table = gr_alv
+        CHANGING
+        t_table = it_sflight
+        ).
+
+      CATCH cx_salv_msg INTO gr_error.
+    ENDTRY.
+
+    PERFORM define_settings USING gr_alv.
+    gr_alv->display(  ).
+  ENDIF.
+ENDMODULE.
+
+*&---------------------------------------------------------------------*
+*& Include zpi_bc405_u09_1t01
+*&---------------------------------------------------------------------*
+
+MODULE user_command_0100 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK' OR 'EXIT' OR 'CANCEL'.
+      SET SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+
+*&---------------------------------------------------------------------*
+*& Include zpi_bc405_u09_1f01
+*&---------------------------------------------------------------------*
+FORM define_settings
+  USING p_alv TYPE REF TO cl_salv_table.
+  PERFORM:  set_display USING p_alv,
+            set_columns USING p_alv.
+ENDFORM.
+
+FORM set_display
+  USING p_alv TYPE REF TO cl_salv_table.
+  DATA: lr_display TYPE REF TO cl_salv_display_settings,
+        l_title    TYPE lvc_title.
+  lr_display = p_alv->get_display_settings(  ).
+  l_title = TEXT-ttl.
+  lr_display->set_list_header( value = TEXT-ttl ).
+  lr_display->set_horizontal_lines( value = ' ' ).
+  lr_display->set_striped_pattern( value = 'X' ).
+
+ENDFORM.
+
+FORM set_columns
+USING p_alv TYPE REF TO cl_salv_table.
+data: lr_columns type ref to cl_salv_columns_table.
+      lr_columns = p_alv->get_columns(  ).
+      lr_columns->set_key_fixation(
+*       value = if_salv_bool_sap~TRUE
+).
+lr_columns->set_optimize(
+*value = if_salv_bool_sap~TRUE
+).
+lr_columns->set_column_position(
+columnname = 'PLANETYPE'
+position = 5
+).
+
+ENDFORM.
